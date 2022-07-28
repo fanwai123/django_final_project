@@ -1,5 +1,6 @@
 from django.shortcuts import render
 from django.http import HttpResponseRedirect
+from sqlalchemy import false
 # <HINT> Import any new Models here
 from .models import Course, Enrollment, Question, Choice, Submission
 from django.contrib.auth.models import User
@@ -119,9 +120,9 @@ def submit(request, course_id):
     submission = Submission.objects.create(enrollment=enroll)    
     for key, value in form.items():
         if 'choice' in key:
-            choice = Choice.objects.filter(pk=value)
-            submission.choices.set(choice)
-            submission.save()
+            choice = Choice.objects.get(pk=value)
+            submission.choices.add(choice)
+    submission.save()
     return HttpResponseRedirect(reverse(viewname='onlinecourse:show_exam_result', args=(course.id,submission.id)))
     
 
@@ -145,8 +146,41 @@ def submit(request, course_id):
         # Calculate the total score
 def show_exam_result(request, course_id, submission_id):
     context = {}
+    user = request.user    
     course = get_object_or_404(Course, pk=course_id)
+    enroll = Enrollment.objects.get(user=user, course=course)
+    questions = Question.objects.filter(course=course) 
+    sub_choices = Submission.objects.get(pk=submission_id).choices.all()
+    total_questions = 0
+    total_mark = 0
+    result_list = []
+    for question in questions:
+        r = {}
+        r['question'] = question.question_text
+        r['correct'] = []
+        r['sub_ans'] = []
+        q_choices = Choice.objects.filter(question=question)
+        correct = False        
+        for q_choice in q_choices:
+            if q_choice.is_correct:
+                r['correct'].append(q_choice.choice_text)
+            for sub_choice in sub_choices:
+                if sub_choice.id == q_choice.id:
+                    r['sub_ans'].append(q_choice.choice_text)
+                    if q_choice.is_correct :
+                        correct = True
+                    else:
+                        correct = False
+        total_questions = total_questions + 1
+        if correct:
+            total_mark = total_mark + 1
+        result_list.append(r)
+    grade = total_mark * 1.0 / total_questions * 100.0
     context['course'] = course
+    context['grade'] = grade
+    context['result'] = result_list
+    print('grade = ', grade)
+    print(context['result'])
     return render(request, 'onlinecourse/exam_result_bootstrap.html', context)
 
 

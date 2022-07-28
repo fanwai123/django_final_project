@@ -75,11 +75,11 @@
             <input type="check" name="choice_{{choice.id}}" id="{{choice.id}}" ...>
             -->
             <!-- <div id="exam" class="collapse"> -->
-            <div>
-                <a data-toggle="collapse" href="#collapseExam">
-                    Click to see the questions
-                </a>
-            </div>
+            </br>
+                <button class="btn btn-primary btn-block" data-toggle="collapse" data-target="#collapseExam">
+                    Start Exam
+                </button>
+
             <div id="collapseExam" class="collapse">
                 <form id="questionform" action="{% url 'onlinecourse:submit' course.id %}" method="post">
                             {% for question in course.question_set.all %}
